@@ -16,8 +16,10 @@ from snowflake.snowpark.types import (
     ByteType,
     FloatType,
     IntegerType,
+    LongType,
     PandasDataFrameType,
     PandasSeriesType,
+    ShortType,
     StringType,
 )
 
@@ -27,9 +29,10 @@ _REQUIREMENTS_TXT = "requirements.txt"
 _DTYPE_TYPE_MAPPING = {
     np.dtype("float64"): FloatType(),
     np.dtype("float32"): FloatType(),
-    np.dtype("int64"): IntegerType(),
+    np.dtype("int64"): LongType(),
     np.dtype("bool"): BooleanType(),
     np.dtype("int32"): IntegerType(),
+    np.dtype("int16"): ShortType(),
     np.dtype("str"): StringType(),
     np.dtype("bytes"): ByteType(),
 }
@@ -63,13 +66,13 @@ with FileLock(os.path.join(tempfile.gettempdir(), 'lockfile.LOCK')):
     if not os.path.isdir(extracted_model_dir_path):
         with zipfile.ZipFile(zip_model_path, 'r') as myzip:
             myzip.extractall(extracted)
-model = mlflow.pyfunc.load_model(extracted_model_dir_path)
+model = mlflow.sklearn.load_model(extracted_model_dir_path)
 
 @vectorized(input=pd.DataFrame, max_batch_size={max_batch_size_string})
 def infer(df):
     {col_statement}
     ans = model.predict(df)
-    return pd.Series(ans)
+    return pd.Series(ans.flatten())
 
 {test_statements}
 """
